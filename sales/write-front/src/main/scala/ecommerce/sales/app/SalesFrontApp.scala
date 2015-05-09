@@ -3,19 +3,30 @@ package ecommerce.sales.app
 import akka.actor._
 import akka.kernel.Bootable
 import com.typesafe.config.{Config, ConfigFactory}
+import org.slf4j.LoggerFactory._
 
-class SalesFrontApp extends Bootable {
+object SalesFrontApp extends App {
+  lazy val log = getLogger(this.getClass.getName)
+  val appName = this.getClass.getSimpleName
+
+  log.info("----------------------------------------------------------------")
+  log.info(s"Starting up $appName")
+  log.info("----------------------------------------------------------------")
 
   private val config: Config = ConfigFactory.load()
   implicit private val system = ActorSystem("sales-front", config)
 
-  override def startup(): Unit = {
-    system.actorOf(SalesFrontAppSupervisor.props, "sales-front-supervisor")
-  }
+  system.actorOf(SalesFrontAppSupervisor.props, "sales-front-supervisor")
 
-  override def shutdown(): Unit = {
-    system.terminate()
-  }
+
+  Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
+    def run = {
+      log.info("----------------------------------------------------------------")
+      log.info(s"Shutting down  $appName")
+      log.info("----------------------------------------------------------------")
+      system.terminate()
+    }
+  }))
 }
 
 object SalesFrontAppSupervisor {

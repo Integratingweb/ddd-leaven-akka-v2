@@ -4,19 +4,32 @@ import akka.actor._
 import akka.kernel.Bootable
 import com.typesafe.config.ConfigFactory
 import ecommerce.sales.SalesViewUpdateService
+import org.slf4j.LoggerFactory._
 
 import scala.slick.driver.{JdbcProfile, PostgresDriver}
 
-class SalesViewUpdateApp extends Bootable {
+object SalesViewUpdateApp extends App {
+  lazy val log = getLogger(this.getClass.getName)
+  val appName = this.getClass.getSimpleName
+
+
+  log.info("----------------------------------------------------------------")
+  log.info(s"Starting up $appName")
+  log.info("----------------------------------------------------------------")
+
   private val config = ConfigFactory.load()
   val system = ActorSystem("sales-view-update", config)
 
-  def startup() = {
-    implicit val profile: JdbcProfile = PostgresDriver
-    system.actorOf(Props(new SalesViewUpdateService(config)), "sales-view-update-service")
-  }
+  implicit val profile: JdbcProfile = PostgresDriver
+  system.actorOf(Props(new SalesViewUpdateService(config)), "sales-view-update-service")
 
-  def shutdown() = {
-    system.terminate()
-  }
+  Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
+    def run = {
+      log.info("----------------------------------------------------------------")
+      log.info(s"Shutting down  $appName")
+      log.info("----------------------------------------------------------------")
+      system.terminate()
+    }
+  }))
 }
+

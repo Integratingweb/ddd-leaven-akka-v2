@@ -10,9 +10,15 @@ import pl.newicom.dddd.office.Office._
 import pl.newicom.dddd.cluster._
 import pl.newicom.dddd.process.SagaSupport.registerSaga
 
-class SalesBackendApp extends Bootable with SalesBackendConfiguration {
+object SalesBackendApp extends App with SalesBackendConfiguration {
+  val appName = this.getClass.getSimpleName
+
 
   lazy val log = getLogger(this.getClass.getName)
+
+  log.info("----------------------------------------------------------------")
+  log.info(s"Starting up $appName")
+  log.info("----------------------------------------------------------------")
 
   val config: Config = ConfigFactory.load()
   implicit val system = ActorSystem("sales", config)
@@ -20,10 +26,9 @@ class SalesBackendApp extends Bootable with SalesBackendConfiguration {
   var _reservationOffice: ActorRef = null
   def reservationOffice = _reservationOffice.path
 
-  override def startup() = {
     joinCluster()
     openOffices()
-  }
+
 
   def openOffices(): Unit = {
     _reservationOffice = office[Reservation]
@@ -39,8 +44,13 @@ class SalesBackendApp extends Bootable with SalesBackendConfiguration {
     Cluster(system).joinSeedNodes(seedList.toSeq)
   }
 
- override def shutdown() = {
-    system.terminate()
-  }
+  Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
+    def run = {
+      log.info("----------------------------------------------------------------")
+      log.info(s"Shutting down  $appName")
+      log.info("----------------------------------------------------------------")
+      system.terminate()
+    }
+  }))
 
 }
